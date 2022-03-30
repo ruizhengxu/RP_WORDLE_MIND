@@ -1,12 +1,13 @@
 import numpy as np
 
 def read_dico(path: str):
-    dico = open(path, "r")
-    return dico.read()
+    with open(path) as f:
+        dico = f.read().splitlines()
+    return dico
 
 if __name__ == '__main__':
     file_path = "./dico.txt"
     dico = read_dico(file_path)
-    print(type(dico))
+    print(dico)
     # solve()
     
