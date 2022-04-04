@@ -26,7 +26,6 @@ class CSP():
         I = self.vars.copy()
         V = self.vars.copy()
         D = self.domains.copy()
-        print([w for w in self.dico if len(w) == len(I)])
         
         def solve(I: dict, V: dict, D: list):
             if len(V) == 0:
@@ -127,10 +126,15 @@ if __name__ == '__main__':
     file_path = "./dico.txt"
     dico = read_dico(file_path)
     secretWord = choose_secretWord(dico, 4)
+    print("Secret word is :", secretWord)
     
     # Solve
     csp = CSP(dico, secretWord)
+    print("Running back tracking method : ....")
     w = csp.backTracking()
-    print("Secret word was :", secretWord)
+    print("Word found with BackTracking :", w)
+    
+    print("Running back tracking method with Forward checking : ....")
+    w = csp.backTrackingWithFC()
     print("Word found with BackTracking :", w)
     
