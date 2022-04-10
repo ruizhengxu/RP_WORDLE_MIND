@@ -1,4 +1,4 @@
-import random, string
+import random, string, time, copy
 import matplotlib.pyplot as plt
 
 """
@@ -39,7 +39,7 @@ class CSP():
                         tmp_V = V.copy()
                         tmp_V.pop(x)
                         instance = solve(tmp_I, tmp_V, D)
-                        if instance is not None and self.toWord(instance) == secretWord:
+                        if instance is not None and self.toWord(instance) == self.secretWord:
                             return instance
 
         instance = solve(I, V, D)
@@ -63,12 +63,56 @@ class CSP():
         return False
                 
     """
-    Backtracking with Forward Checking (FC) method is based on Backtracking method, but
-    it also check the avalable words in the dictionnary of words if words are consistent with
-    solution or not, if not, then remove them, and repeat until finding solution.
+    Forward Checking (FC) method consists to reduce domain of each variables until find the solution.
     """
-    def backTrackingWithFC():
-        pass
+    def forwardChecking(self):
+        I = self.vars.copy()
+        V = self.vars.copy()
+        D = self.domains.copy()
+    
+        def solve(V: dict, I: dict, D: dict):
+            if len(V) == 0:
+                return I
+            else:
+                x = next(iter(V)) # choose a variable (0, 1, 2, ...)
+                for v_x in D[x]: # for all values of domain of x ('a', 'b', 'c', ...)
+                    # remove variable x from V
+                    value = V.pop(x)
+                    tmp_D = copy.deepcopy(D)
+                    if self.check_forward(x, v_x, V, tmp_D):
+                        tmp_I = I.copy()
+                        tmp_I[x] = v_x
+                        instance = solve(V, tmp_I, tmp_D)
+                        if instance is not None and self.toWord(instance) == self.secretWord:
+                            return instance
+                    # restore variable x from V
+                    V[x] = value
+                    
+        instance = solve(V, I, D)
+        return self.toWord(instance)
+    
+    def check_forward(self, x_k: int, v: str, V: dict, tmp_D: dict):
+            
+        consistant = True
+        
+        for x_j in V:
+            if not consistant:
+                break
+            D_j = tmp_D[x_j].copy()
+            for v_ in D_j:
+                # check if x
+                if not self.in_dict(x_k, x_j, v, v_):
+                    tmp_D[x_j].remove(v_)
+            if len(tmp_D[x_j]) == 0: consistant = False
+        return consistant
+                
+    def in_dict(self, x_k, x_j, v, v_):
+        # print(x_k, x_j, v, v_)
+        reduced_dico = [w for w in self.dico if len(w) == len(self.secretWord)]
+        for word in reduced_dico:
+            if word[x_k] == v and word[x_j] == v_:
+                return True
+        return False    
     
     def eval():
         pass
@@ -125,16 +169,20 @@ if __name__ == '__main__':
     # Initialize
     file_path = "./dico.txt"
     dico = read_dico(file_path)
-    secretWord = choose_secretWord(dico, 4)
+    secretWord = choose_secretWord(dico, 20)
     print("Secret word is :", secretWord)
-    
+
     # Solve
     csp = CSP(dico, secretWord)
     print("Running back tracking method : ....")
+    start = time.time()
     w = csp.backTracking()
-    print("Word found with BackTracking :", w)
+    stop = time.time()
+    print("Word found with BackTracking :", w, "in ", stop-start ,"seconds")
     
     print("Running back tracking method with Forward checking : ....")
-    w = csp.backTrackingWithFC()
-    print("Word found with BackTracking :", w)
+    start = time.time()
+    w = csp.forwardChecking()
+    stop = time.time()
+    print("Word found with Forward checking :", w, "in ", stop-start ,"seconds")
     
