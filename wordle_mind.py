@@ -16,16 +16,18 @@ class CSP():
         self.secretWord = secretWord
         self.vars = dict.fromkeys([i for i in range(len(self.secretWord))])
         self.domains = [list(string.ascii_lowercase) for _ in range(len(self.secretWord))]
+        self.n = 0 # Number of tested word
     
     """
     Backtracking method consists to initialize each variables with potentials values
     then check if the current solution is cosistent, if not, it intialize with next values and so on,
     until find the solution.
     """
-    def backTracking(self):
+    def backTracking(self, verbose=False):
         I = self.vars.copy()
         V = self.vars.copy()
         D = self.domains.copy()
+        if self.n != 0: self.n = 0
         
         def solve(I: dict, V: dict, D: list):
             if len(V) == 0:
@@ -39,10 +41,13 @@ class CSP():
                         tmp_V = V.copy()
                         tmp_V.pop(x)
                         instance = solve(tmp_I, tmp_V, D)
-                        if instance is not None and self.toWord(instance) == self.secretWord:
-                            return instance
+                        if instance is not None:
+                            self.n += 1
+                            if self.toWord(instance) == self.secretWord:
+                                return instance
 
         instance = solve(I, V, D)
+        if verbose: print("Number of words tested :", self.n)
         return self.toWord(instance)
             
 
@@ -65,11 +70,12 @@ class CSP():
     """
     Forward Checking (FC) method consists to reduce domain of each variables until find the solution.
     """
-    def forwardChecking(self):
+    def forwardChecking(self, verbose=False):
         I = self.vars.copy()
         V = self.vars.copy()
         D = self.domains.copy()
-    
+        if self.n != 0: self.n = 0
+        
         def solve(V: dict, I: dict, D: dict):
             if len(V) == 0:
                 return I
@@ -83,12 +89,15 @@ class CSP():
                         tmp_I = I.copy()
                         tmp_I[x] = v_x
                         instance = solve(V, tmp_I, tmp_D)
-                        if instance is not None and self.toWord(instance) == self.secretWord:
-                            return instance
+                        if instance is not None:
+                            self.n += 1
+                            if self.toWord(instance) == self.secretWord:
+                                return instance
                     # restore variable x from V
                     V[x] = value
-                    
+        
         instance = solve(V, I, D)
+        if verbose: print("Number of words tested :", self.n)
         return self.toWord(instance)
     
     def check_forward(self, x_k: int, v: str, V: dict, tmp_D: dict):
@@ -169,20 +178,22 @@ if __name__ == '__main__':
     # Initialize
     file_path = "./dico.txt"
     dico = read_dico(file_path)
-    secretWord = choose_secretWord(dico, 20)
+    secretWord = choose_secretWord(dico, 4)
     print("Secret word is :", secretWord)
 
     # Solve
     csp = CSP(dico, secretWord)
     print("Running back tracking method : ....")
     start = time.time()
-    w = csp.backTracking()
+    w = csp.backTracking(verbose=True)
     stop = time.time()
     print("Word found with BackTracking :", w, "in ", stop-start ,"seconds")
     
-    print("Running back tracking method with Forward checking : ....")
+    print("\nRunning back tracking method with Forward checking : ....")
     start = time.time()
-    w = csp.forwardChecking()
+    w = csp.forwardChecking(verbose=True)
     stop = time.time()
     print("Word found with Forward checking :", w, "in ", stop-start ,"seconds")
+    
+    
     
