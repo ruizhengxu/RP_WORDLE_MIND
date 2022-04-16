@@ -326,7 +326,7 @@ class GeneticAlgorithm:
                     pos = i
                     bestFit = fitness[i]
             
-            print(population)
+            if verbose : print("Generation :", gen, ":", population)
             
             if population[pos] == self.secretWord:
                 print("Gen :", gen)
