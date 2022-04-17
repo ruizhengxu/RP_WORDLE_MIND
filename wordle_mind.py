@@ -358,37 +358,37 @@ class GeneticAlgorithm:
 #
 ###################################################
 
+
 def test_4_letters():
     avrg_time_BT, avrg_time_FC = [], []
     f = open('Tests/src/4_letters', 'w')
     writer = csv.writer(f)
-    head = ['Iteration', 'Word', 'Time Back Track (in sec)', 'Time Forward Checking (in sec)']
+    head = ['Iteration', 'Word',
+            'Time Back Track (in sec)', 'Time Forward Checking (in sec)']
     writer.writerow(head)
     for i in range(20):
-            print(f'\nStart of the {i} iterations.')
-            secretWord = choose_secretWord(dico, 4)
-            csp = CSP(dico, secretWord)
+        print(f'\nStart of the {i} iterations.')
+        secretWord = choose_secretWord(dico, 4)
+        csp = CSP(dico, secretWord)
 
-            body = [i, secretWord]
-            print(f'The secret word is {secretWord}.')
+        body = [i, secretWord]
+        print(f'The secret word is {secretWord}.')
 
-            print("Running back tracking method : ....")
-            start = time.time()
-            _ = csp.backTracking(verbose=True)
-            stop = time.time()
-            # print(f'Time : {stop - start}')
-            body.append(stop - start)
+        print("Running back tracking method : ....")
+        start = time.time()
+        _ = csp.backTracking(verbose=True)
+        stop = time.time()
+        # print(f'Time : {stop - start}')
+        body.append(stop - start)
 
-            print("\nRunning back tracking method with Forward checking : ....")
-            start = time.time()
-            _ = csp.forwardChecking(verbose=True)
-            stop = time.time()
-            # print(f'Time : {stop - start}')
-            body.append(stop - start)
+        print("\nRunning back tracking method with Forward checking : ....")
+        start = time.time()
+        _ = csp.forwardChecking(verbose=True)
+        stop = time.time()
+        # print(f'Time : {stop - start}')
+        body.append(stop - start)
 
-
-            writer.writerow(body)
-
+        writer.writerow(body)
 
     f.close()
 
@@ -441,18 +441,36 @@ def test_n_words(n: int, nb_letter_min: int, nb_letter_max: int):
     plt.legend()
     plt.title(
         "Average time to solve the problem depending on the length of words.")
-    plt.savefig(f"Tests/img/{nb_letter_max - 1}_letters")
-
+    plt.savefig(f"Tests/img/{nb_letter_max - 1}_letters.csv")
 
     f.close()
 
 
+def read_csv(filename: str):
+    with open(filename) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        avrg_time_BT, avrg_time_FC = [], []
+        line_count = 0
+        for row in csv_reader:
+            if line_count == 0:
+                print(', '.join(row))
+                line_count += 1
+            elif line_count != 0 and len(row) != 0:
+                print(row[2])
 
-###################################################
-#
-# MAIN PROGRAMM
-#
-###################################################
+                avrg_time_BT.append(float(row[2]))
+                avrg_time_FC.append(float(row[3]))
+
+        print(
+            f"Avarage time for Back Tracking for 20 words of 4 letters : {np.mean(avrg_time_BT)}.")
+        print(
+            f'Avarage time for Forward Checking for 20 words of 4 letters : {np.mean(avrg_time_FC)}.')
+
+    ###################################################
+    #
+    # MAIN PROGRAMM
+    #
+    ###################################################
 
 
 def read_dico(path: str):
@@ -500,3 +518,4 @@ if __name__ == '__main__':
 
     # test_n_words(20, 4, 5)
     # test_4_letters()
+    read_csv('Tests/src/4_letters.csv')
