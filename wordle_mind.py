@@ -44,6 +44,7 @@ class CSP:
         I = self.vars.copy()
         V = self.vars.copy()
         D = self.domains.copy()
+        self.reduced_dico = [w for w in self.dico if len(w) == len(I)]
         if self.n != 0:
             self.n = 0
 
@@ -77,8 +78,7 @@ class CSP:
     """
 
     def local_consistent(self, I: dict):
-        reduced_dico = [w for w in self.dico if len(w) == len(I)]
-        for word in reduced_dico:
+        for word in self.reduced_dico:
             consistent = True
             for i, letter in enumerate(word):
                 if I[i] is not None and I[i] != letter:
@@ -97,6 +97,7 @@ class CSP:
         I = self.vars.copy()
         V = self.vars.copy()
         D = self.domains.copy()
+        self.reduced_dico = [w for w in self.dico if len(w) == len(self.secretWord)]
         if self.n != 0:
             self.n = 0
 
@@ -148,8 +149,8 @@ class CSP:
 
     def in_dict(self, x_k, x_j, v, v_):
         # print(x_k, x_j, v, v_)
-        reduced_dico = [w for w in self.dico if len(w) == len(self.secretWord)]
-        for word in reduced_dico:
+        
+        for word in self.reduced_dico:
             if word[x_k] == v and word[x_j] == v_:
                 return True
         return False
@@ -451,7 +452,7 @@ def test_4_letters():
 
 def test_n_words(n: int, nb_letter_min: int, nb_letter_max: int):
     avrg_time_BT, avrg_time_FC = [], []
-    f = open('Tests/src/4_letters', 'w')
+    f = open('Tests/src/avrg_time_up_to_8_letters_3.csv', 'a')
     writer = csv.writer(f)
 
     for l in range(nb_letter_min, nb_letter_max):
@@ -461,6 +462,7 @@ def test_n_words(n: int, nb_letter_min: int, nb_letter_max: int):
             print(f'\nStart of the {i} iterations.')
             secretWord = choose_secretWord(dico, l)
             csp = CSP(dico, secretWord)
+            body = [secretWord, l]
 
             print(f'The secret word is {secretWord}.')
 
@@ -468,15 +470,18 @@ def test_n_words(n: int, nb_letter_min: int, nb_letter_max: int):
             start = time.time()
             _ = csp.backTracking(verbose=True)
             stop = time.time()
-            # print(f'Time : {stop - start}')
+            print(f'Time : {round(stop - start, 2)} s')
             time_BT.append(stop - start)
+            body.append(stop - start)
 
             print("\nRunning back tracking method with Forward checking : ....")
             start = time.time()
             _ = csp.forwardChecking(verbose=True)
             stop = time.time()
-            # print(f'Time : {stop - start}')
+            print(f'Time : {round(stop - start, 2)} s')
             time_FC.append(stop - start)
+            body.append(stop - start)
+            writer.writerow(body)
 
         # print(f'Time list BT: {time_BT}')
         # print(f'avrg_time_BT : {np.mean(time_BT)}')
@@ -485,6 +490,8 @@ def test_n_words(n: int, nb_letter_min: int, nb_letter_max: int):
         # print(f'Time list FC: {time_FC}')
         # print(f'avrg_time_FC : {np.mean(time_FC)}')
         avrg_time_FC.append(np.mean(time_FC))
+
+    f.close()
 
     # First figure for Back Tracking
     plt.figure()
@@ -497,9 +504,7 @@ def test_n_words(n: int, nb_letter_min: int, nb_letter_max: int):
     plt.legend()
     plt.title(
         "Average time to solve the problem depending on the length of words.")
-    plt.savefig(f"Tests/img/{nb_letter_max - 1}_letters.csv")
-
-    f.close()
+    plt.savefig(f"Tests/img/{nb_letter_max - 1}_letters")
 
 
 def read_csv(filename: str):
@@ -550,7 +555,7 @@ if __name__ == '__main__':
     print("\n=====================\nSecret word is :", secretWord, "\n=====================")
 
     # Solve with CSP
-    # csp = CSP(dico, secretWord)
+    csp = CSP(dico, secretWord)
 
     # print("Running back tracking method : ....")
     # start = time.time()
@@ -568,12 +573,12 @@ if __name__ == '__main__':
     ga = GeneticAlgorithm(dico, secretWord, max_size=50, max_gen=100,
                           popsize=5, CXPB=0.8, MUTPB=0.4)
 
-    print("\nRunning genetic algorithm : ....")
-    start = time.time()
-    w, fit = ga.solve(verbose=True)
-    stop = time.time()
-    print("Word found with Forward checking :", w, "in", stop-start, "seconds")
+    # print("\nRunning genetic algorithm : ....")
+    # start = time.time()
+    # w, fit = ga.solve(verbose=True)
+    # stop = time.time()
+    # print("Word found with Forward checking :", w, "in", stop-start, "seconds")
 
-    # test_n_words(20, 4, 5)
+    test_n_words(4, 4, 9)
     # test_4_letters()
     # read_csv('Tests/src/4_letters.csv')
