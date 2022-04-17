@@ -233,13 +233,13 @@ class GeneticAlgorithm:
 
     def mutation(self, ind):
         fit = self.evaluate(ind)
-        if fit[0] > fit[1]:  # replace
-            for i in range(abs(fit[0]-fit[1])):
+        if fit[0] >= fit[1]:  # replace
+            for _ in range(int(len(self.secretWord)/2)):
                 tmp_char = random.choice(list(string.ascii_lowercase))
                 pos = random.randint(0, len(ind))
                 ind = ind[:pos] + tmp_char + ind[pos+1:]
         else:  # swap
-            for i in range(abs(fit[0]-fit[1])):
+            for _ in range(int(len(self.secretWord)/2)):
                 pos = random.sample([i for i in range(len(ind))], 2)
                 tmp_ind = list(ind)
                 tmp_ind[pos[0]], tmp_ind[pos[1]
@@ -270,7 +270,7 @@ class GeneticAlgorithm:
         return pos
 
     def getClosestWord(self, word):
-        matched_words = get_close_matches(word, self.dico)
+        matched_words = get_close_matches(word, self.dico, n=3, cutoff=0)
         if len(matched_words) == 0:
             return ""
         return matched_words[self.bestInd([self.evaluate(w) for w in matched_words])]
@@ -310,6 +310,7 @@ class GeneticAlgorithm:
         # randomly initialize a set of words
         population = random.sample(
             [w for w in dico if len(w) == len(self.secretWord)], self.popsize)
+        for ind in population: self.dico.remove(ind)
         fitness = [self.evaluate(ind) for ind in population]
         gen = 0
 
@@ -322,26 +323,33 @@ class GeneticAlgorithm:
             print("All population :", population)
             print("All fitness :", fitness)
             return population[pos], bestFit
+        
+        start = time.time()
 
-        for _ in range(self.max_gen):
+        while time.time() - start < 300: # define 5 minutes as the limit of time
             gen += 1
             new_population = []
 
-            for _ in range(int(self.popsize/2)):
-                child1, child2 = self.selection(population, fitness)
-                if random.random() > self.CXPB:
-                    child1, child2 = self.crossover(child1, child2)
-                if random.random() > self.MUTPB:
-                    if child1 != "":
-                        child1 = self.mutation(child1)
-                    if child2 != "":
-                        child2 = self.mutation(child2)
-
-                if child1 not in new_population and self.isCompatible(child1, fitness):
+            # for _ in range(int(self.popsize/2)):
+            child1, child2 = self.selection(population, fitness)
+            if random.random() > self.CXPB:
+                child1, child2 = self.crossover(child1, child2)
+            if random.random() > self.MUTPB:
+                if child1 != "":
+                    child1 = self.mutation(child1)
+                if child2 != "":
+                    child2 = self.mutation(child2)
+            
+            if child1 in self.dico: self.dico.remove(child1)
+            if child2 in self.dico: self.dico.remove(child2)
+            
+            if child1 not in new_population:
+                if self.isCompatible(child1, fitness):
                     new_population.append(child1)
-                if child2 not in new_population and self.isCompatible(child2, fitness):
+            if child2 not in new_population:
+                if self.isCompatible(child2, fitness):
                     new_population.append(child2)
-
+            
             if len(new_population) > 0:
                 population += new_population.copy()
                 fitness += [self.evaluate(ind) for ind in new_population]
@@ -366,7 +374,9 @@ class GeneticAlgorithm:
                 print("All fitness :", fitness)
                 return population[pos], bestFit
 
-        print("Max gen reached.")
+            if gen == self.max_gen: print("Max gen reached at", time.time() - start, "seconds")
+            
+        print("\nEnd of program, secret word ("+self.secretWord+") founded ?", population[pos] == self.secretWord)
         print("All population :", population)
         print("All fitness :", fitness)
         return population[pos], bestFit
@@ -511,8 +521,8 @@ if __name__ == '__main__':
     file_path = "./dico.txt"
     dico = read_dico(file_path)
     # length of secretWord = [2, 22] !!!
-    secretWord = choose_secretWord(dico, 5)
-    print("Secret word is :", secretWord)
+    secretWord = choose_secretWord(dico, 3)
+    print("\n=====================\nSecret word is :", secretWord, "\n=====================")
 
     # Solve with CSP
     csp = CSP(dico, secretWord)
@@ -530,8 +540,8 @@ if __name__ == '__main__':
     # print("Word found with Forward checking :", w, "in", stop-start ,"seconds")
 
     # Solve with Genetic Algorithm
-    # ga = GeneticAlgorithm(dico, secretWord, max_size=100, max_gen=100,
-    #                       popsize=10, CXPB=0.8, MUTPB=0.4)
+    ga = GeneticAlgorithm(dico, secretWord, max_size=50, max_gen=100,
+                          popsize=5, CXPB=0.8, MUTPB=0.4)
 
     # print("\nRunning genetic algorithm : ....")
     # start = time.time()
