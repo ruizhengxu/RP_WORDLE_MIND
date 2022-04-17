@@ -182,12 +182,14 @@ this class takes below inputs :
 
 class GeneticAlgorithm:
 
-    def __init__(self, dico: list, secretWord: str, max_size: int, max_gen: int, popsize: int):
+    def __init__(self, dico: list, secretWord: str, max_size: int, max_gen: int, popsize: int, CXPB: float, MUTPB: float):
         self.dico = [w for w in dico if len(w) == len(secretWord)]
         self.secretWord = secretWord
         self.max_size = max_size
         self.max_gen = max_gen
         self.popsize = popsize
+        self.CXPB = CXPB
+        self.MUTPB = MUTPB
 
     ##########################################################################
 
@@ -207,14 +209,21 @@ class GeneticAlgorithm:
         child1 = ""
         child2 = ""
 
-        for i in range(len(ind1)):
-            pb = random.random()
-            if pb > 0.5:
-                child1 += ind1[i]
-                child2 += ind2[i]
-            else:
-                child1 += ind2[i]
-                child2 += ind1[i]
+        if random.random() < 0.5:  # two points crossover
+            pts = random.sample([i for i in range(5)], k=2)
+            pt1 = min(pts)
+            pt2 = max(pts)
+            child1 = ind1[:pt1] + ind2[pt1:pt2] + ind1[pt2:]
+            child2 = ind2[:pt1] + ind1[pt1:pt2] + ind2[pt2:]
+        else:  # uniform crossover
+            for i in range(len(ind1)):
+                pb = random.random()
+                if pb > 0.5:
+                    child1 += ind1[i]
+                    child2 += ind2[i]
+                else:
+                    child1 += ind2[i]
+                    child2 += ind1[i]
 
         child1 = self.getClosestWord(child1)
         child2 = self.getClosestWord(child2)
@@ -223,15 +232,18 @@ class GeneticAlgorithm:
 
     def mutation(self, ind):
         fit = self.evaluate(ind)
-        if len(self.secretWord) - fit[0] == 1:  # replace
-            tmp_char = random.choice(list(string.ascii_lowercase))
-            pos = random.randint(0, len(ind))
-            ind = ind[:pos] + tmp_char + ind[pos+1:]
+        if fit[0] > fit[1]:  # replace
+            for i in range(abs(fit[0]-fit[1])):
+                tmp_char = random.choice(list(string.ascii_lowercase))
+                pos = random.randint(0, len(ind))
+                ind = ind[:pos] + tmp_char + ind[pos+1:]
         else:  # swap
-            pos = random.choices([i for i in range(len(ind))], k=2)
-            tmp_ind = list(ind)
-            tmp_ind[pos[0]], tmp_ind[pos[1]] = tmp_ind[pos[1]], tmp_ind[pos[0]]
-            ind = "".join(tmp_ind)
+            for i in range(abs(fit[0]-fit[1])):
+                pos = random.sample([i for i in range(len(ind))], 2)
+                tmp_ind = list(ind)
+                tmp_ind[pos[0]], tmp_ind[pos[1]
+                                         ] = tmp_ind[pos[1]], tmp_ind[pos[0]]
+                ind = "".join(tmp_ind)
 
         return self.getClosestWord(ind)
 
@@ -295,8 +307,8 @@ class GeneticAlgorithm:
     def solve(self, verbose=False):
 
         # randomly initialize a set of words
-        population = random.choices(
-            [w for w in dico if len(w) == len(self.secretWord)], k=self.popsize)
+        population = random.sample(
+            [w for w in dico if len(w) == len(self.secretWord)], self.popsize)
         fitness = [self.evaluate(ind) for ind in population]
         gen = 0
 
@@ -315,16 +327,19 @@ class GeneticAlgorithm:
             new_population = []
 
             for _ in range(int(self.popsize/2)):
-                ind1, ind2 = self.selection(population, fitness)
-                child1, child2 = self.crossover(ind1, ind2)
-                if child1 != "":
-                    child1 = self.mutation(child1)
-                    if child1 not in new_population and self.isCompatible(child1, fitness):
-                        new_population.append(child1)
-                if child2 != "":
-                    child2 = self.mutation(child2)
-                    if child2 not in new_population and self.isCompatible(child2, fitness):
-                        new_population.append(child2)
+                child1, child2 = self.selection(population, fitness)
+                if random.random() > self.CXPB:
+                    child1, child2 = self.crossover(child1, child2)
+                if random.random() > self.MUTPB:
+                    if child1 != "":
+                        child1 = self.mutation(child1)
+                    if child2 != "":
+                        child2 = self.mutation(child2)
+
+                if child1 not in new_population and self.isCompatible(child1, fitness):
+                    new_population.append(child1)
+                if child2 not in new_population and self.isCompatible(child2, fitness):
+                    new_population.append(child2)
 
             if len(new_population) > 0:
                 population += new_population.copy()
@@ -333,6 +348,9 @@ class GeneticAlgorithm:
                 if fitness[i] > bestFit:
                     pos = i
                     bestFit = fitness[i]
+
+            if verbose:
+                print("Generation :", gen, ":", population)
 
             if population[pos] == self.secretWord:
                 print("Gen :", gen)
@@ -507,14 +525,14 @@ if __name__ == '__main__':
     # print("Word found with Forward checking :", w, "in", stop-start ,"seconds")
 
     # Solve with Genetic Algorithm
-    # ga = GeneticAlgorithm(dico, secretWord, max_size=100,
-    #                       max_gen=100, popsize=10)
+    ga = GeneticAlgorithm(dico, secretWord, max_size=100, max_gen=100,
+                          popsize=10, CXPB=0.8, MUTPB=0.4)
 
-    # print("\nRunning genetic algorithm : ....")
-    # start = time.time()
-    # w, fit = ga.solve(verbose=True)
-    # stop = time.time()
-    # print("Word found with Forward checking :", w, "in", stop-start, "seconds")
+    print("\nRunning genetic algorithm : ....")
+    start = time.time()
+    w, fit = ga.solve(verbose=True)
+    stop = time.time()
+    print("Word found with Forward checking :", w, "in", stop-start, "seconds")
 
     # test_n_words(20, 4, 5)
     # test_4_letters()
