@@ -194,6 +194,9 @@ class GeneticAlgorithm:
 
     ##########################################################################
 
+    """
+    Choose two best individual based on fitnesses from population
+    """
     def selection(self, population: list, fitness: list):
         tmp_fitness = copy.deepcopy(fitness)
         tmp_population = copy.deepcopy(population)
@@ -206,6 +209,9 @@ class GeneticAlgorithm:
 
         return ind1, ind2
 
+    """
+    Generate two child from individuals based on different methods.
+    """
     def crossover(self, ind1: str, ind2: str):
         child1 = ""
         child2 = ""
@@ -231,8 +237,12 @@ class GeneticAlgorithm:
 
         return child1, child2
 
+    """
+    Mutate individual based on its fitness
+    """
     def mutation(self, ind):
         fit = self.evaluate(ind)
+        
         if fit[0] >= fit[1]:  # replace
             for _ in range(int(len(self.secretWord)/2)):
                 tmp_char = random.choice(list(string.ascii_lowercase))
@@ -248,6 +258,9 @@ class GeneticAlgorithm:
 
         return self.getClosestWord(ind)
 
+    """
+    Verify if individual is compatible with current population based on fitnesses
+    """
     def isCompatible(self, ind, fitness):
         f = self.evaluate(ind)
 
@@ -257,8 +270,13 @@ class GeneticAlgorithm:
 
         return True
 
+    """
+    Get the position of best individual from current population based on fitnesses
+    """
     def bestInd(self, fitness):
         pos = 0
+        # Transform list of well placed and miss placed number to a int with following
+        # formula -> (well_placed * 2 + miss_placed)
         bestFit = fitness[pos][0] * 2 + fitness[pos][1]
 
         for i in range(1, len(fitness)):
@@ -269,6 +287,9 @@ class GeneticAlgorithm:
 
         return pos
 
+    """
+    Get the closest word from dicionnary of the individual
+    """
     def getClosestWord(self, word):
         matched_words = get_close_matches(word, self.dico, n=3, cutoff=0)
         if len(matched_words) == 0:
@@ -278,9 +299,7 @@ class GeneticAlgorithm:
     """
     Evaluate return fitness for the word which we want to evaluate.
     Returned fitness contains two numbers (number of well placed words, number of misplaced words)
-
     """
-
     def evaluate(self, word: str):
         well_placed = 0
         misplaced = 0
@@ -305,6 +324,9 @@ class GeneticAlgorithm:
 
         return [well_placed, misplaced]
 
+    """
+    Function solve run the GA
+    """
     def solve(self, verbose=False):
 
         # randomly initialize a set of words
@@ -330,26 +352,29 @@ class GeneticAlgorithm:
             gen += 1
             new_population = []
 
-            # for _ in range(int(self.popsize/2)):
-            child1, child2 = self.selection(population, fitness)
-            if random.random() > self.CXPB:
-                child1, child2 = self.crossover(child1, child2)
-            if random.random() > self.MUTPB:
-                if child1 != "":
-                    child1 = self.mutation(child1)
-                if child2 != "":
-                    child2 = self.mutation(child2)
+            for _ in range(int(self.popsize/2)):
+                child1, child2 = self.selection(population, fitness)
+                if random.random() > self.CXPB:
+                    child1, child2 = self.crossover(child1, child2)
+                if random.random() > self.MUTPB:
+                    if child1 != "":
+                        child1 = self.mutation(child1)
+                    if child2 != "":
+                        child2 = self.mutation(child2)
+                
+                # Remove childs from dictionnary because we already test its
+                if child1 in self.dico: self.dico.remove(child1)
+                if child2 in self.dico: self.dico.remove(child2)
+                
+                # add childs to new population
+                if child1 not in new_population:
+                    if self.isCompatible(child1, fitness):
+                        new_population.append(child1)
+                if child2 not in new_population:
+                    if self.isCompatible(child2, fitness):
+                        new_population.append(child2)
             
-            if child1 in self.dico: self.dico.remove(child1)
-            if child2 in self.dico: self.dico.remove(child2)
-            
-            if child1 not in new_population:
-                if self.isCompatible(child1, fitness):
-                    new_population.append(child1)
-            if child2 not in new_population:
-                if self.isCompatible(child2, fitness):
-                    new_population.append(child2)
-            
+            # concatenate population and new population and update fitnesses etc
             if len(new_population) > 0:
                 population += new_population.copy()
                 fitness += [self.evaluate(ind) for ind in new_population]
@@ -361,12 +386,14 @@ class GeneticAlgorithm:
             if verbose:
                 print("Generation :", gen, ":", population)
 
+            # if we find the secret word
             if population[pos] == self.secretWord:
                 print("Gen :", gen)
                 print("All population :", population)
                 print("All fitness :", fitness)
                 return population[pos], bestFit
 
+            # if we reach max_size
             if len(population) == self.max_size:
                 print("Max size of population reached.")
                 print("Gen :", gen)
@@ -374,6 +401,7 @@ class GeneticAlgorithm:
                 print("All fitness :", fitness)
                 return population[pos], bestFit
 
+            # if we reach max_gen
             if gen == self.max_gen: print("Max gen reached at", time.time() - start, "seconds")
             
         print("\nEnd of program, secret word ("+self.secretWord+") founded ?", population[pos] == self.secretWord)
@@ -499,11 +527,13 @@ def read_csv(filename: str):
         print(
             f'Avarage time for Forward Checking for 20 words of 4 letters : {np.mean(avrg_time_FC)}.')
 
-    ###################################################
-    #
-    # MAIN PROGRAMM
-    #
-    ###################################################
+
+
+###################################################
+#
+# MAIN PROGRAMM
+#
+###################################################
 
 
 def read_dico(path: str):
