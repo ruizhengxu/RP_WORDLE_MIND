@@ -390,7 +390,7 @@ class GeneticAlgorithm:
 
 def test_4_letters():
     avrg_time_BT, avrg_time_FC = [], []
-    f = open('Tests/src/4_letters', 'w')
+    f = open('Tests/src/4_letters_opti.csv', 'w')
     writer = csv.writer(f)
     head = ['Iteration', 'Word',
             'Time Back Track (in sec)', 'Time Forward Checking (in sec)']
@@ -549,6 +549,7 @@ if __name__ == '__main__':
     # stop = time.time()
     # print("Word found with Forward checking :", w, "in", stop-start, "seconds")
 
-    test_n_words(4, 4, 9)
+    # test_n_words(4, 4, 9)
     # test_4_letters()
-    # read_csv('Tests/src/4_letters.csv')
+    read_csv('Tests/src/4_letters.csv')
+    read_csv('Tests/src/4_letters_opti.csv')
