@@ -452,7 +452,7 @@ def test_4_letters():
 
 def test_n_words(n: int, nb_letter_min: int, nb_letter_max: int):
     avrg_time_BT, avrg_time_FC = [], []
-    f = open('Tests/src/avrg_time_up_to_8_letters_3.csv', 'a')
+    f = open('Tests/src/avrg_time_up_to_8_letters_4.csv', 'a')
     writer = csv.writer(f)
 
     for l in range(nb_letter_min, nb_letter_max):
@@ -510,22 +510,82 @@ def test_n_words(n: int, nb_letter_min: int, nb_letter_max: int):
 def read_csv(filename: str):
     with open(filename) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
-        avrg_time_BT, avrg_time_FC = [], []
+        avrg_time_BT, avrg_time_FC = [[] for i in range(8)], [[] for i in range(8)]
         line_count = 0
+
         for row in csv_reader:
             if line_count == 0:
                 print(', '.join(row))
                 line_count += 1
             elif line_count != 0 and len(row) != 0:
-                print(row[2])
+                avrg_time_BT[int(row[1])].append(float(row[2]))
+                avrg_time_FC[int(row[1])].append(float(row[3]))
+        for i in range(2, 8):
+            avrg_time_BT[i] = np.log(np.mean(avrg_time_BT[i]))
+            avrg_time_FC[i] = np.log(np.mean(avrg_time_FC[i]))
 
-                avrg_time_BT.append(float(row[2]))
-                avrg_time_FC.append(float(row[3]))
+        print(len(avrg_time_BT))
+        print(len(avrg_time_FC))
+        print(np.arange(2,8))
+        plt.figure()
+        plt.plot(
+            np.arange(2, 8),
+                avrg_time_BT[2:], color='m', label='Back Tracking')
+        plt.plot(np.arange(2, 7),
+                avrg_time_FC[2:7], color='c', label='Forward Checking')
+        plt.xlabel("Length of words")
+        plt.ylabel("Time in sec")
+        plt.legend()
+        plt.title(
+            "Average time to solve the problem depending on the length of words.")
+        plt.savefig(f"Tests/img/log_2_to_6_letters")
 
-        print(
-            f"Avarage time for Back Tracking for 20 words of 4 letters : {np.mean(avrg_time_BT)}.")
-        print(
-            f'Avarage time for Forward Checking for 20 words of 4 letters : {np.mean(avrg_time_FC)}.')
+        # print(
+        #     f"Avarage time for Back Tracking for 20 words of 4 letters : {np.mean(avrg_time_BT)}.")
+        # print(
+        #     f'Avarage time for Forward Checking for 20 words of 4 letters : {np.mean(avrg_time_FC)}.')
+        csv_file.close()
+
+def test_gen(n: int, nb_letter_min: int, nb_letter_max: int):
+    avrg_time = []
+    f = open('Tests/src/avrg_time_genetic_algo_3.csv', 'a')
+    writer = csv.writer(f)
+
+    for l in range(nb_letter_min, nb_letter_max):
+        print(f'Words of {l} letters')
+        time_gen = []
+        for i in range(n):
+            print(f'\nStart of the {i} iterations.')
+            secretWord = choose_secretWord(dico, l)
+            ga = GeneticAlgorithm(dico, secretWord, max_size=50, max_gen=100,
+                          popsize=5, CXPB=0.8, MUTPB=0.4)
+            body = [secretWord, l]
+
+            print(f'The secret word is {secretWord}.')
+
+            print("Running genetic algorithm : ....")
+            start = time.time()
+            w, fit = ga.solve(verbose=True)
+            stop = time.time()
+            print(f'Time : {round(stop - start, 2)} s')
+            time_gen.append(stop - start)
+            body.append(stop - start)
+            writer.writerow(body)
+
+        avrg_time.append(np.mean(time_gen))
+
+    f.close()
+
+    # First figure for Back Tracking
+    plt.figure()
+    plt.plot(np.arange(nb_letter_min, nb_letter_max),
+             avrg_time, color='m', label='Genetic algorithm')
+    plt.xlabel("Length of words")
+    plt.ylabel("Time in sec")
+    plt.legend()
+    plt.title(
+        "Average time to solve the problem depending on the length of words.")
+    plt.savefig(f"Tests/img/genetic_alg_3")
 
 
 
@@ -573,13 +633,15 @@ if __name__ == '__main__':
     ga = GeneticAlgorithm(dico, secretWord, max_size=50, max_gen=100,
                           popsize=5, CXPB=0.8, MUTPB=0.4)
 
-    # print("\nRunning genetic algorithm : ....")
-    # start = time.time()
-    # w, fit = ga.solve(verbose=True)
-    # stop = time.time()
-    # print("Word found with Forward checking :", w, "in", stop-start, "seconds")
+    print("\nRunning genetic algorithm : ....")
+    start = time.time()
+    w, fit = ga.solve(verbose=True)
+    stop = time.time()
+    print("Word found with genetic algorith :", w, "in", stop-start, "seconds")
 
-    # test_n_words(4, 4, 9)
+    # test_n_words(1, 7, 8)
+    test_gen(10, 2, 15)
     # test_4_letters()
-    read_csv('Tests/src/4_letters.csv')
-    read_csv('Tests/src/4_letters_opti.csv')
+    # read_csv('Tests/src/4_letters.csv')
+    # read_csv('Tests/src/4_letters_opti.csv')
+    # read_csv('Tests/src/avrg_time_up_to_8_letters_2.csv')
